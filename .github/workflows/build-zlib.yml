@@ -1,0 +1,30 @@
+name: build-zlib
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/pypa/manylinux2014_x86_64
+    steps:
+      - name: Build PHP 8.4.2 with zlib shared
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp
+          curl -fsSL -o php.tar.gz https://www.php.net/distributions/php-8.4.2.tar.gz
+          tar xzf php.tar.gz
+          cd php-8.4.2
+          ./configure --disable-all --enable-zlib=shared
+          make -j"$(nproc)"
+          ls -la modules/
+          file modules/zlib.so || true
+          mkdir -p /tmp/out
+          cp modules/zlib.so /tmp/out/zlib-8.4.2.so
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zlib-so-php84
+          path: /tmp/out/*
