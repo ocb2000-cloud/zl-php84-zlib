@@ -13,15 +13,21 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          rpm -q zlib-devel || yum install -y zlib-devel || (sed -i "s|mirrorlist=|#mirrorlist=|g; s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/*.repo && yum install -y zlib-devel)
+          cd /tmp
+          curl -fsSL -o zlib.tgz https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz
+          tar xzf zlib.tgz
+          cd zlib-1.3.1
+          ./configure --static --prefix=/tmp/zlibinst
+          make CFLAGS="-fPIC -O2" -j"$(nproc)"
+          make install
           cd /tmp
           curl -fsSL -o php.tar.gz https://www.php.net/distributions/php-8.4.2.tar.gz
           tar xzf php.tar.gz
           cd php-8.4.2
-          ./configure --disable-all --with-zlib=shared
+          ZLIB_CFLAGS="-I/tmp/zlibinst/include" ZLIB_LIBS="/tmp/zlibinst/lib/libz.a" ./configure --disable-all --with-zlib=shared
           make -j"$(nproc)"
           ls -la modules/
-          file modules/zlib.so || true
+          ldd modules/zlib.so || true
           mkdir -p /tmp/out
           cp modules/zlib.so /tmp/out/zlib-8.4.2.so
       - name: Upload artifact
