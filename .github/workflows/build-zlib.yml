@@ -13,11 +13,12 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
+          rpm -q zlib-devel || yum install -y zlib-devel || (sed -i "s|mirrorlist=|#mirrorlist=|g; s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/*.repo && yum install -y zlib-devel)
           cd /tmp
           curl -fsSL -o php.tar.gz https://www.php.net/distributions/php-8.4.2.tar.gz
           tar xzf php.tar.gz
           cd php-8.4.2
-          ./configure --disable-all --enable-zlib=shared
+          ./configure --disable-all --with-zlib=shared
           make -j"$(nproc)"
           ls -la modules/
           file modules/zlib.so || true
